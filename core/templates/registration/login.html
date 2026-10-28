@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login | ChargeNear</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #06b6d4; --amber: #f59e0b;
+    --text: #e2e8f0; --muted: #94a3b8;
+    --glass: rgba(255,255,255,.05); --glass-border: rgba(255,255,255,.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif; color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    background: radial-gradient(ellipse at 50% 45%, #0a1a2b 0%, #050a14 60%, #030610 100%);
+  }
+
+  /* ---------- Calm energy portal ---------- */
+  .portal { position: fixed; left: 50%; top: 50%; z-index: -1; pointer-events: none; width: 0; height: 0; }
+  .beacon {
+    position: absolute; width: 760px; height: 760px; left: -380px; top: -380px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(6,182,212,.28) 0%, rgba(6,182,212,.10) 35%, transparent 68%);
+    animation: breathe 7s ease-in-out infinite; will-change: transform, opacity;
+  }
+  .beacon.warm {
+    width: 520px; height: 520px; left: -260px; top: -260px;
+    background: radial-gradient(circle, rgba(245,158,11,.16) 0%, transparent 65%);
+    animation-delay: -3.5s;
+  }
+  .ring {
+    position: absolute; border-radius: 50%; border: 1px solid rgba(6,182,212,.35);
+    box-shadow: 0 0 30px rgba(6,182,212,.15), inset 0 0 30px rgba(6,182,212,.08);
+    animation: ringPulse 8s ease-in-out infinite; will-change: transform, opacity;
+  }
+  .ring.r1 { width: 460px; height: 460px; left: -230px; top: -230px; }
+  .ring.r2 { width: 640px; height: 640px; left: -320px; top: -320px; animation-delay: -2.6s; border-color: rgba(6,182,212,.22); }
+  .ring.r3 { width: 840px; height: 840px; left: -420px; top: -420px; animation-delay: -5.2s; border-color: rgba(245,158,11,.16); }
+  @keyframes breathe { 0%,100% { transform: scale(.88); opacity: .65; } 50% { transform: scale(1.08); opacity: 1; } }
+  @keyframes ringPulse { 0%,100% { transform: scale(.94); opacity: .35; } 50% { transform: scale(1.04); opacity: .9; } }
+  .vignette { position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(2,4,10,.7) 100%); }
+
+  /* ---------- Navbar ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 5vw; background: rgba(5,10,20,.55);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--glass-border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; color: #fff; text-decoration: none; }
+  .brand span { background: linear-gradient(90deg, #fff, var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--teal), #0e7490); animation: pulseGlow 2.6s ease-in-out infinite; }
+  .logo svg { width: 20px; height: 20px; fill: #fff; }
+  @keyframes pulseGlow {
+    0%,100% { box-shadow: 0 0 10px rgba(6,182,212,.45), 0 0 0 0 rgba(6,182,212,.35); }
+    50%     { box-shadow: 0 0 26px rgba(6,182,212,.85), 0 0 0 9px rgba(6,182,212,0); }
+  }
+  .nav-link { color: #04222b; text-decoration: none; font-weight: 700; font-size: .88rem; padding: 7px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--teal), #22d3ee); box-shadow: 0 4px 16px rgba(6,182,212,.3); transition: all .25s ease; }
+  .nav-link:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 24px rgba(6,182,212,.55); }
+
+  /* ---------- Card ---------- */
+  main { flex: 1; display: grid; place-items: center; padding: 40px 5vw; perspective: 1000px; }
+  .card {
+    --mx: 50%; --my: 0%;
+    position: relative; width: 100%; max-width: 430px; padding: 38px 34px; border-radius: 22px;
+    background: rgba(255,255,255,.045);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 24px 70px rgba(0,0,0,.55), 0 0 60px rgba(6,182,212,.10);
+    transform-style: preserve-3d; transition: transform .25s ease-out;
+    animation: slideUp .9s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(34px) scale(.98); } to { opacity: 1; transform: none; } }
+  .card::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(6,182,212,.6), rgba(255,255,255,.06) 40%, rgba(245,158,11,.5));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+  .card::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(260px circle at var(--mx) var(--my), rgba(6,182,212,.16), transparent 70%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .card:hover::after { opacity: 1; }
+
+  .card-head { text-align: center; margin-bottom: 26px; }
+  .card-icon { width: 58px; height: 58px; margin: 0 auto 16px; border-radius: 18px; display: grid; place-items: center;
+    background: linear-gradient(135deg, rgba(6,182,212,.25), rgba(245,158,11,.2)); border: 1px solid var(--glass-border);
+    animation: iconGlow 3s ease-in-out infinite; }
+  .card-icon svg { width: 30px; height: 30px; fill: var(--amber); filter: drop-shadow(0 0 8px rgba(245,158,11,.8)); }
+  @keyframes iconGlow { 0%,100% { box-shadow: 0 0 20px rgba(6,182,212,.3); } 50% { box-shadow: 0 0 40px rgba(6,182,212,.65); } }
+  h1 { font-size: 1.7rem; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+  .sub { color: var(--muted); font-size: .94rem; margin-top: 6px; }
+
+  /* ---------- Form ---------- */
+  .field { position: relative; margin-bottom: 18px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 7px; transition: color .25s; }
+  .field:focus-within label { color: var(--teal); }
+  .field input {
+    width: 100%; padding: 12px 14px; border-radius: 12px; outline: none; color: #fff;
+    background: rgba(5,10,20,.65); border: 1px solid var(--glass-border);
+    font: 500 .95rem 'Inter', sans-serif; transition: border-color .25s, box-shadow .25s, background .25s;
+  }
+  .field input::placeholder { color: #64748b; }
+  .field input:hover { border-color: rgba(148,163,184,.4); }
+  .field input:focus { border-color: var(--teal); background: rgba(5,10,20,.9);
+    box-shadow: 0 0 0 3px rgba(6,182,212,.18), 0 0 24px rgba(6,182,212,.28); }
+  .field.has-toggle input { padding-right: 46px; }
+  .toggle { position: absolute; right: 8px; bottom: 6px; width: 34px; height: 34px; border: 0; border-radius: 9px;
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 1.05rem; transition: color .2s, background .2s; }
+  .toggle:hover { color: var(--teal); background: rgba(6,182,212,.12); }
+  .caps { display: none; margin-top: 7px; font-size: .8rem; color: var(--amber); }
+  .caps.show { display: block; }
+  .alert { margin-bottom: 18px; padding: 11px 14px; border-radius: 12px; font-size: .88rem;
+    background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; animation: shake .45s; }
+  @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+
+  /* ---------- Button ---------- */
+  .btn {
+    position: relative; overflow: hidden; width: 100%; margin-top: 8px; padding: 14px; border-radius: 14px; border: 0; cursor: pointer;
+    font: 700 1rem 'Inter', sans-serif; color: #04222b;
+    background: linear-gradient(135deg, var(--teal), #22d3ee 55%, var(--amber) 130%);
+    background-size: 160% 100%; box-shadow: 0 8px 24px rgba(6,182,212,.35);
+    transition: transform .2s ease, box-shadow .25s ease, background-position .5s ease;
+  }
+  .btn:hover { transform: translateY(-3px); background-position: 100% 0; box-shadow: 0 14px 34px rgba(6,182,212,.55); }
+  .btn:active { transform: scale(.98); }
+  .btn.loading { pointer-events: none; opacity: .85; }
+  .btn.loading::after { content: ""; display: inline-block; width: 15px; height: 15px; margin-left: 10px; vertical-align: -2px;
+    border: 2px solid rgba(4,34,43,.3); border-top-color: #04222b; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ripple { position: absolute; border-radius: 50%; pointer-events: none; background: rgba(255,255,255,.55); transform: scale(0); animation: ripple .65s ease-out forwards; }
+  @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+  .switch { text-align: center; margin-top: 22px; font-size: .9rem; color: var(--muted); }
+  .switch a { color: var(--amber); font-weight: 600; text-decoration: none; transition: color .2s, text-shadow .2s; }
+  .switch a:hover { color: #fbbf24; text-shadow: 0 0 12px rgba(245,158,11,.6); text-decoration: underline; }
+
+  footer { text-align: center; padding: 24px 5vw; color: var(--muted); font-size: .88rem;
+    border-top: 1px solid var(--glass-border); background: rgba(5,10,20,.5); }
+  footer b { color: var(--teal); font-weight: 600; }
+
+  @media (max-width: 480px) { .card { padding: 30px 22px; } .ring.r3 { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="portal">
+  <div class="beacon"></div>
+  <div class="beacon warm"></div>
+  <div class="ring r1"></div>
+  <div class="ring r2"></div>
+  <div class="ring r3"></div>
+</div>
+<div class="vignette"></div>
+
+<nav>
+  <a class="brand" href="{% url 'home' %}">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+    <span>ChargeNear</span>
+  </a>
+  <a class="nav-link" href="{% url 'register' %}">Register</a>
+</nav>
+
+<main>
+  <div class="card" id="card">
+    <div class="card-head">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+      <h1>Welcome back</h1>
+      <p class="sub">Ready to charge? Login to find and book your slot.</p>
+    </div>
+
+    {% if form.errors %}
+      <div class="alert">Wrong username/email or password. Please try again.</div>
+    {% endif %}
+
+    <form method="post" id="loginForm" novalidate>
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username or email</label>
+        {{ form.username }}
+      </div>
+
+      <div class="field has-toggle">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        <button type="button" class="toggle" id="toggle" aria-label="Show password">👁</button>
+        <div class="caps" id="caps">⚠ Caps Lock is on</div>
+      </div>
+
+      <button class="btn" type="submit" id="submitBtn">Login</button>
+    </form>
+
+    <p class="switch">New here? <a href="{% url 'register' %}">Create an account</a></p>
+  </div>
+</main>
+
+<footer>⚡ <b>ChargeNear</b> · Smart EV Charging Station Finder and Booking System</footer>
+
+<script>
+  const u = document.getElementById('{{ form.username.id_for_label }}');
+  const p = document.getElementById('{{ form.password.id_for_label }}');
+  if (u) { u.placeholder = 'Enter your username or email'; u.autocomplete = 'username'; u.focus(); }
+  if (p) { p.placeholder = 'Enter your password'; p.autocomplete = 'current-password'; }
+
+  // Show / hide password
+  const toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', () => {
+    const show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    toggle.textContent = show ? '🙈' : '👁';
+    toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+
+  // Caps Lock warning
+  const caps = document.getElementById('caps');
+  ['keydown', 'keyup'].forEach(ev =>
+    p.addEventListener(ev, e => caps.classList.toggle('show', e.getModifierState && e.getModifierState('CapsLock'))));
+  p.addEventListener('blur', () => caps.classList.remove('show'));
+
+  // Card: cursor spotlight + gentle 3D tilt (desktop only)
+  const card = document.getElementById('card');
+  const fine = matchMedia('(pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (fine) {
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      card.style.setProperty('--mx', x + 'px');
+      card.style.setProperty('--my', y + 'px');
+      const rx = ((y / r.height) - .5) * -5, ry = ((x / r.width) - .5) * 5;
+      card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+  }
+
+  // Button: loading state + ripple
+  const btn = document.getElementById('submitBtn');
+  document.getElementById('loginForm').addEventListener('submit', () => {
+    btn.classList.add('loading'); btn.firstChild.nodeValue = 'Signing in';
+  });
+  btn.addEventListener('click', e => {
+    const r = btn.getBoundingClientRect(), size = Math.max(r.width, r.height);
+    const s = document.createElement('span');
+    s.className = 'ripple';
+    s.style.width = s.style.height = size + 'px';
+    s.style.left = (e.clientX - r.left - size / 2) + 'px';
+    s.style.top  = (e.clientY - r.top  - size / 2) + 'px';
+    btn.appendChild(s);
+    setTimeout(() => s.remove(), 650);
+  });
+</script>
+</body>
+</html>

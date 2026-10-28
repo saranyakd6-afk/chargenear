@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Book: {{ station.name }}</h3>
+<p>{{ station.charger_type }} · {{ station.power_kw }} kW · ₹{{ station.price_per_kwh }}/kWh</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}
+  <button class="btn btn-success">Confirm booking</button>
+  <a href="{% url 'add_vehicle' %}" class="btn btn-link">Add vehicle</a>
+</form>
+{% endblock %}

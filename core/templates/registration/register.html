@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Register | ChargeNear</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #06b6d4; --amber: #f59e0b;
+    --text: #e2e8f0; --muted: #94a3b8;
+    --glass: rgba(255,255,255,.05); --glass-border: rgba(255,255,255,.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif; color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    background: linear-gradient(180deg, #060d1c 0%, #08142a 55%, #051820 100%);
+    background-attachment: fixed;
+  }
+
+  /* ---------- Circuit flow background ---------- */
+  .circuit { position: fixed; top: 0; bottom: 0; width: min(26vw, 340px); z-index: -2; pointer-events: none; opacity: .9; }
+  .circuit.left  { left: 0; }
+  .circuit.right { right: 0; transform: scaleX(-1); }
+  .circuit svg { width: 100%; height: 100%; }
+  .trace { fill: none; stroke: rgba(6,182,212,.14); stroke-width: 1.5; }
+  .trace.amber { stroke: rgba(245,158,11,.12); }
+  .flow {
+    fill: none; stroke-width: 2.5; stroke-linecap: round;
+    stroke-dasharray: 90 910; stroke-dashoffset: 1000;
+    animation: flow 7s linear infinite; filter: drop-shadow(0 0 6px currentColor);
+  }
+  .flow.cyan  { stroke: #22d3ee; color: #06b6d4; }
+  .flow.amber { stroke: #fbbf24; color: #f59e0b; animation-duration: 9s; animation-delay: -3s; }
+  .flow.d2 { animation-delay: -2.5s; animation-duration: 8s; }
+  .flow.d3 { animation-delay: -5s;  animation-duration: 10s; }
+  @keyframes flow { to { stroke-dashoffset: 0; } }
+  .node { fill: #06b6d4; animation: nodePulse 3s ease-in-out infinite; }
+  .node.amber { fill: #f59e0b; animation-delay: -1.2s; }
+  @keyframes nodePulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+
+  .wave {
+    position: fixed; left: 0; right: 0; height: 60vh; z-index: -3; pointer-events: none;
+    background: radial-gradient(60% 100% at 50% 100%, rgba(6,182,212,.14), transparent 70%);
+    bottom: 0; animation: waveRise 9s ease-in-out infinite;
+  }
+  @keyframes waveRise { 0%,100% { transform: translateY(14%); opacity: .5; } 50% { transform: translateY(0); opacity: 1; } }
+  .vignette { position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(2,6,14,.65) 100%); }
+
+  /* ---------- Navbar ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 5vw; background: rgba(6,13,28,.6);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--glass-border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.25rem; color: #fff; text-decoration: none; }
+  .brand span { background: linear-gradient(90deg, #fff, var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--teal), #0e7490); animation: pulseGlow 2.6s ease-in-out infinite; }
+  .logo svg { width: 20px; height: 20px; fill: #fff; }
+  @keyframes pulseGlow {
+    0%,100% { box-shadow: 0 0 10px rgba(6,182,212,.45), 0 0 0 0 rgba(6,182,212,.35); }
+    50%     { box-shadow: 0 0 26px rgba(6,182,212,.85), 0 0 0 9px rgba(6,182,212,0); }
+  }
+  .nav-link { color: var(--text); text-decoration: none; font-weight: 600; font-size: .88rem; padding: 7px 16px; border-radius: 10px;
+    background: var(--glass); border: 1px solid var(--glass-border); transition: all .25s ease; }
+  .nav-link:hover { border-color: rgba(6,182,212,.6); box-shadow: 0 0 20px rgba(6,182,212,.25); transform: translateY(-1px); }
+
+  /* ---------- Card ---------- */
+  main { flex: 1; display: grid; place-items: center; padding: 40px 5vw; }
+  .card {
+    --p: 0;
+    position: relative; width: 100%; max-width: 520px; padding: 42px 40px 36px; border-radius: 24px; overflow: hidden;
+    background: rgba(255,255,255,.05);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 24px 70px rgba(0,0,0,.5), 0 0 60px rgba(6,182,212,.08);
+    animation: popIn .9s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(.88) translateY(20px); } to { opacity: 1; transform: none; } }
+  .card::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(6,182,212,.55), rgba(255,255,255,.06) 40%, rgba(245,158,11,.5));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+
+  /* power-fill edges: top bar + left edge */
+  .power-top, .power-left { position: absolute; background: linear-gradient(90deg, var(--teal), #22d3ee, var(--amber)); pointer-events: none;
+    box-shadow: 0 0 14px rgba(6,182,212,.8); transition: transform .6s cubic-bezier(.2,.8,.2,1); }
+  .power-top  { top: 0; left: 0; right: 0; height: 3px; transform-origin: left; transform: scaleX(var(--p)); }
+  .power-left { top: 0; bottom: 0; left: 0; width: 3px; transform-origin: top; transform: scaleY(var(--p));
+    background: linear-gradient(180deg, var(--teal), #22d3ee, var(--amber)); }
+  .card.ready .power-top, .card.ready .power-left { animation: readyGlow 1.6s ease-in-out infinite; }
+  @keyframes readyGlow { 50% { box-shadow: 0 0 26px rgba(245,158,11,.9); } }
+
+  .card-head { text-align: center; margin-bottom: 22px; }
+  .card-icon { width: 58px; height: 58px; margin: 0 auto 16px; border-radius: 18px; display: grid; place-items: center;
+    background: linear-gradient(135deg, rgba(6,182,212,.25), rgba(245,158,11,.2)); border: 1px solid var(--glass-border);
+    animation: iconGlow 3s ease-in-out infinite; }
+  .card-icon svg { width: 30px; height: 30px; fill: var(--amber); filter: drop-shadow(0 0 8px rgba(245,158,11,.8)); }
+  @keyframes iconGlow { 0%,100% { box-shadow: 0 0 20px rgba(6,182,212,.3); } 50% { box-shadow: 0 0 40px rgba(6,182,212,.65); } }
+  h1 { font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+  .sub { color: var(--muted); font-size: .94rem; margin-top: 6px; }
+
+  .power-label { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); margin-bottom: 22px; }
+  .power-label b { color: var(--teal); font-weight: 700; transition: color .3s; }
+  .card.ready .power-label b { color: var(--amber); }
+
+  /* ---------- Form ---------- */
+  .field { position: relative; margin-bottom: 20px; }
+  .field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 7px; transition: color .25s; }
+  .field:focus-within label { color: var(--teal); }
+  .field input {
+    width: 100%; padding: 12px 42px 12px 14px; border-radius: 12px; outline: none; color: #fff;
+    background: rgba(6,13,28,.65); border: 1px solid var(--glass-border);
+    font: 500 .95rem 'Inter', sans-serif; transition: border-color .25s, box-shadow .25s, background .25s;
+  }
+  .field input::placeholder { color: #64748b; }
+  .field input:hover { border-color: rgba(148,163,184,.4); }
+  .field input:focus { border-color: var(--teal); background: rgba(6,13,28,.9);
+    box-shadow: 0 0 0 3px rgba(6,182,212,.18), 0 0 24px rgba(6,182,212,.28); }
+  .field.ok input { border-color: rgba(34,197,94,.55); }
+  .field.bad input { border-color: rgba(239,68,68,.6); }
+  .check { position: absolute; right: 14px; bottom: 12px; font-size: .95rem; opacity: 0; transform: scale(.5); transition: all .3s; pointer-events: none; }
+  .field.ok .check { opacity: 1; transform: scale(1); color: #22c55e; }
+  .field.bad .check { opacity: 1; transform: scale(1); color: #f87171; }
+  .eye { position: absolute; right: 8px; bottom: 6px; width: 34px; height: 34px; border: 0; border-radius: 9px; background: transparent;
+    color: var(--muted); cursor: pointer; font-size: 1rem; transition: color .2s, background .2s; z-index: 2; }
+  .eye:hover { color: var(--teal); background: rgba(6,182,212,.12); }
+  .field.has-eye .check { right: 46px; }
+
+  /* helper text as badges */
+  .helptext { margin-top: 9px; font-size: .76rem; line-height: 1.5; color: var(--muted); }
+  .helptext ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; }
+  .helptext li { padding: 4px 10px; border-radius: 999px; background: rgba(6,182,212,.08);
+    border: 1px solid rgba(6,182,212,.22); color: #9bd8e4; }
+  .helptext > :not(ul) { display: inline-block; padding: 4px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.04); border: 1px solid var(--glass-border); }
+
+  .error { margin-top: 8px; font-size: .8rem; color: #fca5a5; font-weight: 500; }
+  .error::before { content: "⚠ "; }
+  .alert { margin-bottom: 18px; padding: 11px 14px; border-radius: 12px; font-size: .88rem;
+    background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; }
+
+  /* ---------- Button ---------- */
+  .btn {
+    position: relative; overflow: visible; width: 100%; margin-top: 10px; padding: 15px; border-radius: 14px; border: 0; cursor: pointer;
+    font: 700 1.02rem 'Inter', sans-serif; color: #04222b;
+    background: linear-gradient(135deg, var(--teal), #22d3ee 55%, var(--amber) 130%); background-size: 160% 100%;
+    box-shadow: 0 8px 24px rgba(6,182,212,.35);
+    transition: transform .2s ease, box-shadow .25s ease, background-position .5s ease;
+  }
+  .btn:hover { transform: translateY(-3px); background-position: 100% 0; box-shadow: 0 14px 38px rgba(6,182,212,.6), 0 0 28px rgba(245,158,11,.25); }
+  .btn:active { transform: scale(.98); }
+  .btn.loading { pointer-events: none; opacity: .9; }
+  .btn.loading::after { content: ""; display: inline-block; width: 15px; height: 15px; margin-left: 10px; vertical-align: -2px;
+    border: 2px solid rgba(4,34,43,.3); border-top-color: #04222b; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wave-ring { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
+    border: 2px solid rgba(34,211,238,.9); pointer-events: none; animation: shock 1s ease-out forwards; }
+  .wave-ring.w2 { border-color: rgba(251,191,36,.8); animation-delay: .15s; }
+  @keyframes shock { from { transform: scale(1); opacity: .9; } to { transform: scale(22); opacity: 0; } }
+
+  .switch { text-align: center; margin-top: 22px; font-size: .9rem; color: var(--muted); }
+  .switch a { color: var(--amber); font-weight: 600; text-decoration: none; transition: color .2s, text-shadow .2s; }
+  .switch a:hover { color: #fbbf24; text-shadow: 0 0 12px rgba(245,158,11,.6); text-decoration: underline; }
+
+  footer { text-align: center; padding: 24px 5vw; color: var(--muted); font-size: .88rem;
+    border-top: 1px solid var(--glass-border); background: rgba(6,13,28,.5); }
+  footer b { color: var(--teal); font-weight: 600; }
+
+  @media (max-width: 560px) { .card { padding: 32px 22px 28px; } .circuit { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wave"></div>
+
+<!-- Circuit lines (left, mirrored on right) -->
+<div class="circuit left">
+  <svg viewBox="0 0 200 1000" preserveAspectRatio="none" aria-hidden="true">
+    <path class="trace" d="M30 0 V220 H90 V420 H40 V700 H110 V1000" />
+    <path class="trace amber" d="M120 0 V140 H160 V380 H100 V610 H150 V1000" />
+    <path class="trace" d="M70 0 V90 H20 V520 H70 V860 H30 V1000" />
+    <path class="flow cyan"  pathLength="1000" d="M30 0 V220 H90 V420 H40 V700 H110 V1000" />
+    <path class="flow amber" pathLength="1000" d="M120 0 V140 H160 V380 H100 V610 H150 V1000" />
+    <path class="flow cyan d3" pathLength="1000" d="M70 0 V90 H20 V520 H70 V860 H30 V1000" />
+    <circle class="node" cx="90" cy="220" r="4"/><circle class="node amber" cx="160" cy="380" r="4"/>
+    <circle class="node" cx="40" cy="420" r="4"/><circle class="node amber" cx="100" cy="610" r="4"/>
+    <circle class="node" cx="110" cy="700" r="4"/><circle class="node amber" cx="20" cy="520" r="4"/>
+  </svg>
+</div>
+<div class="circuit right">
+  <svg viewBox="0 0 200 1000" preserveAspectRatio="none" aria-hidden="true">
+    <path class="trace" d="M60 0 V180 H120 V460 H50 V760 H130 V1000" />
+    <path class="trace amber" d="M140 0 V260 H90 V540 H160 V820 H110 V1000" />
+    <path class="flow cyan d2" pathLength="1000" d="M60 0 V180 H120 V460 H50 V760 H130 V1000" />
+    <path class="flow amber d3" pathLength="1000" d="M140 0 V260 H90 V540 H160 V820 H110 V1000" />
+    <circle class="node amber" cx="120" cy="180" r="4"/><circle class="node" cx="50" cy="460" r="4"/>
+    <circle class="node" cx="90" cy="260" r="4"/><circle class="node amber" cx="160" cy="540" r="4"/>
+    <circle class="node" cx="130" cy="760" r="4"/>
+  </svg>
+</div>
+<div class="vignette"></div>
+
+<nav>
+  <a class="brand" href="{% url 'home' %}">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+    <span>ChargeNear</span>
+  </a>
+  <a class="nav-link" href="{% url 'login' %}">Login</a>
+</nav>
+
+<main>
+  <div class="card" id="card">
+    <div class="power-top"></div>
+    <div class="power-left"></div>
+
+    <div class="card-head">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+      <h1>Create your account</h1>
+      <p class="sub">Power up. Join ChargeNear to find and book EV charging slots.</p>
+    </div>
+
+    <div class="power-label"><span>Account power</span><b id="pct">0%</b></div>
+
+    {% if form.non_field_errors %}
+      <div class="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" id="regForm" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="field {% if 'password' in field.html_name %}has-eye{% endif %}" data-name="{{ field.html_name }}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if 'password' in field.html_name %}
+            <button type="button" class="eye" aria-label="Show password">👁</button>
+          {% endif %}
+          <span class="check">●</span>
+          {% if field.help_text %}
+            <div class="helptext">{{ field.help_text|safe }}</div>
+          {% endif %}
+          {% for e in field.errors %}
+            <div class="error">{{ e }}</div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <button class="btn" type="submit" id="submitBtn">Create account</button>
+    </form>
+
+    <p class="switch">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+  </div>
+</main>
+
+<footer>⚡ <b>ChargeNear</b> · Smart EV Charging Station Finder and Booking System</footer>
+
+<script>
+  const card = document.getElementById('card');
+  const pct  = document.getElementById('pct');
+  const fields = [...document.querySelectorAll('.field')];
+  const val = f => f.querySelector('input').value;
+  const byName = n => fields.find(f => f.dataset.name === n);
+
+  // Per-field validity
+  function valid(f) {
+    const v = val(f), n = f.dataset.name;
+    if (n === 'username')  return v.trim().length >= 3;
+    if (n === 'email')     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+    if (n === 'password1') return v.length >= 8 && !/^\d+$/.test(v);
+    if (n === 'password2') return v.length > 0 && v === val(byName('password1'));
+    return v.length > 0;
+  }
+
+  // Power-fill progress
+  function update() {
+    let ok = 0;
+    fields.forEach(f => {
+      const v = val(f), good = valid(f);
+      f.classList.toggle('ok', v && good);
+      f.classList.toggle('bad', v && !good && document.activeElement !== f.querySelector('input'));
+      if (good) ok++;
+    });
+    const p = ok / fields.length;
+    card.style.setProperty('--p', p);
+    pct.textContent = Math.round(p * 100) + '%';
+    card.classList.toggle('ready', p === 1);
+  }
+  fields.forEach(f => {
+    const i = f.querySelector('input');
+    i.addEventListener('input', update);
+    i.addEventListener('blur', update);
+    i.addEventListener('focus', update);
+  });
+
+  // Placeholders + autocomplete
+  const ph = {username: 'Choose a username', email: 'you@example.com', password1: 'Create a password', password2: 'Repeat your password'};
+  const ac = {username: 'username', email: 'email', password1: 'new-password', password2: 'new-password'};
+  fields.forEach(f => {
+    const i = f.querySelector('input'), n = f.dataset.name;
+    if (ph[n]) i.placeholder = ph[n];
+    if (ac[n]) i.autocomplete = ac[n];
+  });
+  const first = fields[0] && fields[0].querySelector('input');
+  if (first) first.focus();
+
+  // Show / hide password
+  document.querySelectorAll('.eye').forEach(b => {
+    b.addEventListener('click', () => {
+      const i = b.parentElement.querySelector('input');
+      const show = i.type === 'password';
+      i.type = show ? 'text' : 'password';
+      b.textContent = show ? '🙈' : '👁';
+    });
+  });
+
+  // Button: electric wave on click + loading on submit
+  const btn = document.getElementById('submitBtn');
+  btn.addEventListener('click', e => {
+    const r = btn.getBoundingClientRect();
+    ['', 'w2'].forEach(c => {
+      const w = document.createElement('span');
+      w.className = 'wave-ring ' + c;
+      w.style.left = (e.clientX - r.left) + 'px';
+      w.style.top  = (e.clientY - r.top) + 'px';
+      btn.appendChild(w);
+      setTimeout(() => w.remove(), 1200);
+    });
+  });
+  document.getElementById('regForm').addEventListener('submit', () => {
+    btn.classList.add('loading'); btn.firstChild.nodeValue = 'Creating account';
+  });
+
+  update();
+</script>
+</body>
+</html>

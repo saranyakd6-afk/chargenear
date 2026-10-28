@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>📊 Admin Dashboard</h3>
+
+<div class="row text-center mb-4">
+  {% for label, val in stat_cards %}{% endfor %}
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>{{ stats.total }}</h4><small>Total bookings</small></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>₹{{ stats.revenue }}</h4><small>Revenue</small></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>{{ stats.charging }}</h4><small>Charging now</small></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>{{ stats.cancelled }}</h4><small>Cancelled</small></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>{{ stats.stations }}</h4><small>Stations</small></div></div></div>
+  <div class="col-6 col-md-2 mb-2"><div class="card shadow-sm"><div class="card-body">
+    <h4>{{ stats.vehicles }}</h4><small>Vehicles</small></div></div></div>
+</div>
+
+<div class="row">
+  <div class="col-md-12 mb-4"><div class="card shadow-sm"><div class="card-body">
+    <h6>Peak booking hours</h6><canvas id="peakChart" height="80"></canvas>
+  </div></div></div>
+  <div class="col-md-6 mb-4"><div class="card shadow-sm"><div class="card-body">
+    <h6>Bookings per station</h6><canvas id="stationChart"></canvas>
+  </div></div></div>
+  <div class="col-md-6 mb-4"><div class="card shadow-sm"><div class="card-body">
+    <h6>Revenue per station (₹)</h6><canvas id="revChart"></canvas>
+  </div></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ chart_data|json_script:"chart-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const d = JSON.parse(document.getElementById('chart-data').textContent);
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+const opts = {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}};
+
+new Chart(document.getElementById('peakChart'), {type: 'bar',
+  data: {labels: d.hours, datasets: [{data: d.peak, backgroundColor: '#198754'}]}, options: opts});
+new Chart(document.getElementById('stationChart'), {type: 'bar',
+  data: {labels: d.stations, datasets: [{data: d.bookings, backgroundColor: '#0d6efd'}]}, options: opts});
+new Chart(document.getElementById('revChart'), {type: 'doughnut',
+  data: {labels: d.stations, datasets: [{data: d.revenue}]}});
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card mx-auto shadow-sm" style="max-width:420px">
+  <div class="card-body">
+    <h4>Booking #{{ b.id }}
+      {% if b.status == 'booked' %}<span class="badge bg-success">Valid</span>
+      {% else %}<span class="badge bg-secondary">{{ b.get_status_display }}</span>{% endif %}
+    </h4>
+    <p class="mb-1">User: {{ b.user.username }}</p>
+    <p class="mb-1">Vehicle: {{ b.vehicle.name }} ({{ b.vehicle.connector_type }})</p>
+    <p class="mb-1">Station: {{ b.station.name }}</p>
+    <p class="mb-1">Time: {{ b.start_time|date:"d M, H:i" }} to {{ b.end_time|date:"H:i" }}</p>
+    <p class="mb-3">Cost: ₹{{ b.est_cost }}</p>
+    {% if b.status == 'booked' %}
+    <form method="post">{% csrf_token %}
+      <button class="btn btn-success w-100">▶ Start charging</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

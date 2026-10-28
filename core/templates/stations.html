@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3 class="mb-3">Charging Stations</h3>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-6">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Search by name or address">
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="type">
+      <option value="">All charger types</option>
+      {% for t in types %}
+        <option value="{{ t }}" {% if t == ctype %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3"><button class="btn btn-primary w-100">Search</button></div>
+</form>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+  <button id="nearBtn" class="btn btn-outline-primary btn-sm">📍 Find stations near me</button>
+  <span class="legend"><i class="lg green"></i> Slot free</span>
+  <span class="legend"><i class="lg red"></i> Full</span>
+  <span class="legend"><i class="lg blue"></i> You</span>
+</div>
+<div id="map" style="height:420px" class="mb-4 rounded"></div>
+
+<div class="row" id="stationRow">
+{% for s in stations %}
+  <div class="col-md-4 mb-3 station-col" data-id="{{ s.id }}" data-lat="{{ s.latitude }}" data-lng="{{ s.longitude }}">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <h5>{{ s.name }}</h5>
+        <p class="text-muted mb-1">{{ s.address }}</p>
+        <p class="dist text-info mb-1"></p>
+        <p class="mb-1">⚡ {{ s.charger_type }} · {{ s.power_kw }} kW</p>
+        <p class="mb-1">₹{{ s.price_per_kwh }}/kWh</p>
+
+        {% if s.review_count %}
+          <p class="mb-1">⭐ {{ s.avg_rating|floatformat:1 }}
+            <small class="text-muted">({{ s.review_count }})</small></p>
+        {% else %}
+          <p class="mb-1 text-muted small">No reviews yet</p>
+        {% endif %}
+
+        {% if s.free_slots > 0 %}
+          <span class="badge bg-success">{{ s.free_slots }} slot(s) free</span>
+        {% else %}
+          <span class="badge bg-danger">Full</span>
+          <small class="d-block mt-1">{{ s.waiting }} waiting</small>
+          {% if s.wait_min %}
+            <small class="d-block text-warning">⏱ Next slot free in ~{{ s.wait_min }} min</small>
+          {% endif %}
+        {% endif %}
+
+        <div>
+          <a href="{% url 'book' s.pk %}" class="btn btn-sm btn-primary mt-2">Book slot</a>
+          <a href="{% url 'station_detail' s.pk %}" class="btn btn-sm btn-outline-secondary mt-2">Details</a>
+          <button type="button" class="btn btn-sm btn-outline-light mt-2 show-map">📍 Show on map</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <p class="text-muted">No stations found.</p>
+{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .legend { font-size: .85rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .lg { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .lg.green { background: #22c55e; } .lg.red { background: #ef4444; } .lg.blue { background: #3b82f6; }
+  .pin { width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+         border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.5); display: grid; place-items: center; }
+  .pin span { transform: rotate(45deg); font-size: 15px; }
+  .pin.green { background: #22c55e; } .pin.red { background: #ef4444; }
+  .you { width: 16px; height: 16px; border-radius: 50%; background: #3b82f6;
+         border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(59,130,246,.3); }
+  .pop b { font-size: 1rem; }
+  .pop .ok { color: #22c55e; font-weight: 600; } .pop .no { color: #ef4444; font-weight: 600; }
+  .pop a { display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: 8px;
+           background: #06b6d4; color: #04222b !important; font-weight: 600; text-decoration: none; }
+</style>
+
+{{ map_data|json_script:"map-data" }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const data = JSON.parse(document.getElementById('map-data').textContent);
+const map = L.map('map').setView(data.length ? [data[0].lat, data[0].lng] : [10.52, 76.21], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {attribution: '© OpenStreetMap'}).addTo(map);
+
+const markers = {};
+data.forEach(s => {
+  const free = s.free > 0;
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="pin ${free ? 'green' : 'red'}"><span>⚡</span></div>`,
+    iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -32]
+  });
+  const status = free
+    ? `<span class="ok">✅ ${s.free} of ${s.total} slots free</span>`
+    : `<span class="no">⛔ Full</span>${s.wait ? `<br>⏱ Next free in ~${s.wait} min` : ''}`;
+  markers[s.id] = L.marker([s.lat, s.lng], {icon}).addTo(map).bindPopup(
+    `<div class="pop"><b>${s.name}</b><br>${status}<br>
+     ⚡ ${s.type} · ${s.power} kW<br>₹${s.price}/kWh<br>
+     <a href="/book/${s.id}/">Book slot</a></div>`);
+});
+if (data.length) map.fitBounds(data.map(s => [s.lat, s.lng]), {padding: [40, 40], maxZoom: 14});
+
+// Show on map button
+document.querySelectorAll('.show-map').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.closest('.station-col').dataset.id;
+    document.getElementById('map').scrollIntoView({behavior: 'smooth', block: 'center'});
+    map.flyTo(markers[id].getLatLng(), 15);
+    setTimeout(() => markers[id].openPopup(), 700);
+  });
+});
+
+function km(a, b, c, d) {
+  const r = x => x * Math.PI / 180, R = 6371;
+  const dLat = r(c - a), dLon = r(d - b);
+  const h = Math.sin(dLat/2)**2 + Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+// Find stations near me
+document.getElementById('nearBtn').onclick = () => {
+  navigator.geolocation.getCurrentPosition(pos => {
+    const {latitude: la, longitude: lo} = pos.coords;
+    L.marker([la, lo], {icon: L.divIcon({className: '', html: '<div class="you"></div>', iconSize: [16, 16]})})
+      .addTo(map).bindPopup('You are here');
+    const row = document.getElementById('stationRow');
+    const cols = [...row.querySelectorAll('.station-col')];
+    cols.forEach(c => {
+      c.dist = km(la, lo, +c.dataset.lat, +c.dataset.lng);
+      c.querySelector('.dist').textContent = '📍 ' + c.dist.toFixed(1) + ' km away';
+    });
+    cols.sort((a, b) => a.dist - b.dist).forEach(c => row.appendChild(c));
+    if (cols.length) {
+      map.fitBounds([[la, lo], [+cols[0].dataset.lat, +cols[0].dataset.lng]], {padding: [60, 60]});
+      markers[cols[0].dataset.id].openPopup();
+    }
+  }, () => alert('Please allow location access.'));
+};
+</script>
+{% endblock %}

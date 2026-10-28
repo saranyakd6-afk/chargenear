@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card mx-auto shadow-sm text-center" style="max-width:380px">
+  <div class="card-body">
+    <h4>🎫 Booking #{{ b.id }}</h4>
+    <img src="{% url 'booking_qr' b.pk %}" width="220" alt="QR code" class="rounded bg-white p-2 my-2">
+    <p class="mb-1 mt-2"><b>{{ b.station.name }}</b></p>
+    <p class="mb-1">{{ b.start_time|date:"d M Y, H:i" }} to {{ b.end_time|date:"H:i" }}</p>
+    <p class="mb-1">{{ b.vehicle.name }} · {{ b.current_battery }}% to {{ b.target_battery }}%</p>
+    <p class="mb-1">Estimated cost: <b>₹{{ b.est_cost }}</b></p>
+    <span class="badge bg-primary">{{ b.get_status_display }}</span>
+    <p class="text-muted small mt-2">Show this QR at the station.</p>
+    <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary btn-sm">My bookings</a>
+  </div>
+</div>
+{% endblock %}

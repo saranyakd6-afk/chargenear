@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>🧭 Trip Range Planner</h3>
+
+{% if not vehicles %}
+  <div class="alert alert-warning">Add your EV first. <a href="{% url 'add_vehicle' %}">Add vehicle</a></div>
+{% else %}
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select id="vehicle" class="form-select">
+      {% for v in vehicles %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input id="battery" type="number" min="1" max="100" class="form-control" placeholder="Battery %">
+  </div>
+  <div class="col-md-5">
+    <input id="dest" class="form-control" placeholder="Destination (e.g. Kochi)">
+  </div>
+  <div class="col-md-2">
+    <button id="go" class="btn btn-success w-100">Check</button>
+  </div>
+</div>
+<div id="out"></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const out = document.getElementById('out');
+const show = (cls, html) => out.innerHTML = `<div class="alert alert-${cls}">${html}</div>`;
+
+document.getElementById('go')?.addEventListener('click', () => {
+  const battery = document.getElementById('battery').value;
+  const dest = document.getElementById('dest').value.trim();
+  if (!battery || !dest) return show('warning', 'Enter battery % and destination.');
+  show('info', 'Working...');
+
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const g = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
+                            + encodeURIComponent(dest)).then(r => r.json());
+      if (!g.length) return show('danger', 'Destination not found.');
+      const p = new URLSearchParams({
+        vehicle: document.getElementById('vehicle').value, battery,
+        lat: pos.coords.latitude, lng: pos.coords.longitude,
+        dlat: g[0].lat, dlng: g[0].lon });
+      const r = await fetch('/api/plan/?' + p).then(r => r.json());
+      if (r.error) return show('danger', r.error);
+
+      let html = `Distance: <b>${r.distance_km} km</b> · Your range: <b>${r.range_km} km</b><br>`;
+      if (r.reachable) return show('success', html + '✅ You can reach your destination without charging.');
+      html += '⚠️ Not reachable on current charge. Charge at one of these first:<ul class="mb-0">';
+      r.stations.forEach(s => html += `<li><b>${s.name}</b> (${s.charger}) · ${s.from_you_km} km from you,
+        ${s.to_dest_km} km from destination · <a href="/book/${s.id}/">Book</a></li>`);
+      if (!r.stations.length) html += '<li>No station within your range. Charge before leaving.</li>';
+      show('warning', html + '</ul>');
+    } catch (e) { show('danger', 'Something went wrong. Try again.'); }
+  }, () => show('danger', 'Please allow location access.'));
+});
+</script>
+{% endblock %}
