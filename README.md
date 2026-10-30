@@ -98,6 +98,4 @@ core/templates/    All HTML templates
 - SMS alerts
 - Route-based trip planning with a maps API
 
-## Author
 
-Pranav
